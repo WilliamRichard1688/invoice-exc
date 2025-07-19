@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="km">
+<head>
+    <meta charset="UTF-8">
+    <title>Money Exchange Receipt Generator</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom font family for Khmer characters with a fallback */
+        body {
+            font-family: 'Inter', 'Khmer OS Battambang', Arial, sans-serif;
+        }
+
+        /* Print-specific styles to hide input form and adjust layout */
+        @media print {
+            .input-form-section, .print-btn, .no-print-element {
+                display: none !important; /* Hide input form, print button, and other non-print elements */
+            }
+            .app-container {
+                @apply shadow-none rounded-none max-w-none flex-col w-full; /* Remove shadows, borders, full width for print */
+                box-shadow: none !important; /* Ensure no shadow */
+            }
+            .receipt-display-section {
+                @apply p-0 m-0 w-full; /* No padding/margin for receipt on print */
+            }
+            .receipt {
+                @apply border-0 shadow-none p-0 m-0 w-full max-w-none; /* Clean receipt for print */
+            }
+            body {
+                @apply bg-white p-0; /* White background, no padding for body */
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800 antialiased p-4 sm:p-6 lg:p-8">
+    <div class="app-container bg-white rounded-xl shadow-lg overflow-hidden flex flex-col lg:flex-row max-w-6xl mx-auto">
+
+        <div class="input-form-section p-6 sm:p-8 lg:p-10 bg-gray-50 lg:w-1/2 lg:border-r border-gray-200">
+            <h2 class="text-3xl font-bold text-indigo-700 mb-8 text-center">បញ្ចូលពត៌មានប្តូរប្រាក់</h2>
+            <p class="text-gray-600 text-center mb-6">Enter Exchange Information</p>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+                <div class="form-group">
+                    <label for="receiptNo" class="block text-sm font-medium text-gray-700 mb-2">លេខវិក្កយបត្រ (Receipt No)</label>
+                    <input type="text" id="receiptNo" value="EXC-000000" oninput="generateReceipt()"
+                           class="w-full px-4 py-3 border border-gray-200 bg-white rounded-lg focus:outline-none focus:border-blue-600 focus:shadow-none transition duration-200 shadow-sm">
+                </div>
+
+                <div class="form-group">
+                    <label for="handledBy" class="block text-sm font-medium text-gray-700 mb-2">គ្រប់គ្រងដោយ (Handled By)</label>
+                    <input type="text" id="handledBy" value="Staff (ID: ST-001)" oninput="generateReceipt()"
+                           class="w-full px-4 py-3 border border-gray-200 bg-white rounded-lg focus:outline-none focus:border-blue-600 focus:shadow-none transition duration-200 shadow-sm">
+                </div>
+
+                <div class="form-group">
+                    <label for="customerName" class="block text-sm font-medium text-gray-700 mb-2">ឈ្មោះអតិថិជន (Customer Name)</label>
+                    <input type="text" id="customerName" value="XXXX" oninput="generateReceipt()"
+                           class="w-full px-4 py-3 border border-gray-200 bg-white rounded-lg focus:outline-none focus:border-blue-600 focus:shadow-none transition duration-200 shadow-sm">
+                </div>
+
+                <div class="form-group">
+                    <label for="customerPhone" class="block text-sm font-medium text-gray-700 mb-2">លេខទូរស័ព្ទ (Phone)</label>
+                    <input type="text" id="customerPhone" value="XXXX" oninput="generateReceipt()"
+                           class="w-full px-4 py-3 border border-gray-200 bg-white rounded-lg focus:outline-none focus:border-blue-600 focus:shadow-none transition duration-200 shadow-sm">
+                </div>
+
+                <div class="form-group">
+                    <label for="customerID" class="block text-sm font-medium text-gray-700 mb-2">លេខអត្តសញ្ញាណប័ណ្ណ (ID Number)</label>
+                    <input type="text" id="customerID" value="XXXX" oninput="generateReceipt()"
+                           class="w-full px-4 py-3 border border-gray-200 bg-white rounded-lg focus:outline-none focus:border-blue-600 focus:shadow-none transition duration-200 shadow-sm">
+                </div>
+
+                <div class="form-group">
+                    <label for="currencyFrom" class="block text-sm font-medium text-gray-700 mb-2">រូបិយប័ណ្ណពី (Currency From)</label>
+                    <div class="relative">
+                        <select id="currencyFrom" onchange="updateCurrencySymbols(); generateReceipt()"
+                                class="w-full px-4 py-3 border border-gray-200 bg-white rounded-lg appearance-none focus:outline-none focus:border-blue-600 focus:shadow-none transition duration-200 shadow-sm">
+                            <option value="USD">USD - ដុល្លារអាមេរិក</option>
+                            <option value="KHR">KHR - រៀលខ្មែរ</option>
+                        </select>
+                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+                            <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="currencyTo" class="block text-sm font-medium text-gray-700 mb-2">រូបិយប័ណ្ណទៅ (Currency To)</label>
+                    <div class="relative">
+                        <select id="currencyTo" onchange="updateCurrencySymbols(); generateReceipt()"
+                                class="w-full px-4 py-3 border border-gray-200 bg-white rounded-lg appearance-none focus:outline-none focus:border-blue-600 focus:shadow-none transition duration-200 shadow-sm">
+                            <option value="KHR">KHR - រៀលខ្មែរ</option>
+                            <option value="USD">USD - ដុល្លារអាមេរិក</option>
+                        </select>
+                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+                            <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="amountReceived" class="block text-sm font-medium text-gray-700 mb-2">ចំនួនទឹកប្រាក់ទទួល (Amount Received)</label>
+                    <div class="relative">
+                        <input type="number" id="amountReceived" value="1000" step="0.01" oninput="generateReceipt()"
+                               class="w-full px-4 py-3 border border-gray-200 bg-white rounded-lg focus:outline-none focus:border-blue-600 focus:shadow-none transition duration-200 shadow-sm pr-12">
+                        <span id="amountReceivedSymbol" class="currency-symbol absolute right-4 top-1/2 -translate-y-1/2 text-gray-500">$</span>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="exchangeRate" class="block text-sm font-medium text-gray-700 mb-2">អត្រាប្តូរប្រាក់ (Exchange Rate)</label>
+                    <div class="relative">
+                        <input type="number" id="exchangeRate" value="4100" step="0.01" oninput="generateReceipt()"
+                               class="w-full px-4 py-3 border border-gray-200 bg-white rounded-lg focus:outline-none focus:border-blue-600 focus:shadow-none transition duration-200 shadow-sm pr-20">
+                        <span id="exchangeRateSymbol" class="currency-symbol absolute right-4 top-1/2 -translate-y-1/2 text-gray-500">៛/USD</span>
+                    </div>
+                </div>
+
+                <div class="form-group md:col-span-2">
+                    <label for="businessName" class="block text-sm font-medium text-gray-700 mb-2">ឈ្មោះអាជីវកម្ម (Business Name)</label>
+                    <input type="text" id="businessName" value="MONEY EXPRESS CAMBODIA" oninput="generateReceipt()"
+                           class="w-full px-4 py-3 border border-gray-200 bg-white rounded-lg focus:outline-none focus:border-blue-600 focus:shadow-none transition duration-200 shadow-sm">
+                </div>
+
+                <div class="form-group md:col-span-2">
+                    <label for="businessAddress" class="block text-sm font-medium text-gray-700 mb-2">អាសយដ្ឋាន (Address)</label>
+                    <input type="text" id="businessAddress" value="National Road No. 1, Sangkat Niroth, Khan Chbar Ampov, Phnom Penh, 12357" oninput="generateReceipt()"
+                           class="w-full px-4 py-3 border border-gray-200 bg-white rounded-lg focus:outline-none focus:border-blue-600 focus:shadow-none transition duration-200 shadow-sm">
+                </div>
+
+                <div class="form-group md:col-span-2">
+                    <label for="businessPhone" class="block text-sm font-medium text-gray-700 mb-2">លេខទូរស័ព្ទអាជីវកម្ម (Business Phone)</label>
+                    <input type="text" id="businessPhone" value="089 202 808" oninput="generateReceipt()"
+                           class="w-full px-4 py-3 border border-gray-200 bg-white rounded-lg focus:outline-none focus:border-blue-600 focus:shadow-none transition duration-200 shadow-sm">
+                </div>
+            </div>
+        </div>
+
+        <div class="receipt-display-section p-6 sm:p-8 lg:p-10 lg:w-1/2 flex flex-col justify-between">
+            <div class="receipt bg-white rounded-lg p-0">
+                <div class="header text-center mb-8 pb-4 border-b border-gray-200">
+                    <h1 id="receiptBusinessName" class="text-3xl font-bold text-gray-900 mb-2">MONEY EXPRESS CAMBODIA</h1>
+                    <p id="receiptBusinessContact" class="text-sm text-gray-600">National Road No. 1, Sangkat Niroth, Khan Chbar Ampov, Phnom Penh, 12357 | Phone: 089 202 808</p>
+                </div>
+
+                <div class="section mb-6">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b border-gray-200">ព័ត៌មានលម្អិតបង្កាន់ដៃ (Receipt Details)</h3>
+                    <table class="info-table w-full text-base">
+                        <tr class="border-b border-gray-100"><td class="label font-medium text-gray-700 py-2 px-0">លេខវិក្កយបត្រ (Receipt No):</td><td id="receiptReceiptNo" class="py-2 px-0 text-gray-900">EXC-000456</td></tr>
+                        <tr class="border-b border-gray-100"><td class="label font-medium text-gray-700 py-2 px-0">កាលបរិច្ឆេទប្រតិបត្តិការ (Transaction Date):</td><td id="receiptDate" class="py-2 px-0 text-gray-900"></td></tr>
+                        <tr class="border-b border-gray-100"><td class="label font-medium text-gray-700 py-2 px-0">ម៉ោង (Time):</td><td id="receiptTime" class="py-2 px-0 text-gray-900"></td></tr>
+                        <tr><td class="label font-medium text-gray-700 py-2 px-0">គ្រប់គ្រងដោយ (Handled By):</td><td id="receiptHandledBy" class="py-2 px-0 text-gray-900">Staff Name (ID: ST-001)</td></tr>
+                    </table>
+                </div>
+
+                <div class="section mb-6">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b border-gray-200">ពត៌មានអតិថិជន (Customer Information)</h3>
+                    <table class="info-table w-full text-base">
+                        <tr class="border-b border-gray-100"><td class="label font-medium text-gray-700 py-2 px-0">ឈ្មោះអតិថិជន (Customer Name):</td><td id="receiptCustomerName" class="py-2 px-0 text-gray-900">John Doe</td></tr>
+                        <tr class="border-b border-gray-100"><td class="label font-medium text-gray-700 py-2 px-0">លេខទូរស័ព្ទ (Phone):</td><td id="receiptCustomerPhone" class="py-2 px-0 text-gray-900">012 345 678</td></tr>
+                        <tr><td class="label font-medium text-gray-700 py-2 px-0">លេខអត្តសញ្ញាណប័ណ្ណ (ID Number):</td><td id="receiptCustomerID" class="py-2 px-0 text-gray-900">A123456789</td></tr>
+                    </table>
+                </div>
+
+                <div class="section mb-6">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b border-gray-200">ព័ត៌មានប្តូរប្រាក់ (Exchange Information)</h3>
+                    <table class="info-table w-full text-base">
+                        <tr class="border-b border-gray-100"><td class="label font-medium text-gray-700 py-2 px-0">រូបិយប័ណ្ណពី (Currency From):</td><td id="receiptCurrencyFrom" class="py-2 px-0 text-gray-900">USD</td></tr>
+                        <tr class="border-b border-gray-100"><td class="label font-medium text-gray-700 py-2 px-0">រូបិយប័ណ្ណទៅ (Currency To):</td><td id="receiptCurrencyTo" class="py-2 px-0 text-gray-900">KHR</td></tr>
+                        <tr class="border-b border-gray-100"><td class="label font-medium text-gray-700 py-2 px-0">ចំនួនទឹកប្រាក់ទទួល (Amount Received):</td><td id="receiptAmountReceived" class="py-2 px-0 text-gray-900">$1,000.00</td></tr>
+                        <tr class="border-b border-gray-100"><td class="label font-medium text-gray-700 py-2 px-0">អត្រាប្តូរប្រាក់ (Exchange Rate):</td><td id="receiptExchangeRate" class="py-2 px-0 text-gray-900">4,100.00 ៛/USD</td></tr>
+                        <tr><td class="label font-medium text-gray-700 py-2 px-0">ចំនួនទឹកប្រាក់ផ្តល់ (Amount Given):</td><td id="receiptAmountGiven" class="py-2 px-0 text-gray-900">4,100,000៛</td></tr>
+                    </table>
+                </div>
+
+                <div class="amount-box bg-blue-50 text-blue-800 p-6 rounded-lg border-2 border-dashed border-blue-300 text-center text-xl font-bold my-8">
+                     <strong class="block mt-2">ចំនួនទឹកប្រាក់សរុបដែលបានបង់ជូនអតិថិជន (Total Paid to Customer): <span id="receiptTotalPaid">4,100,000៛</span></strong>
+                </div>
+
+                <div class="footer text-center mt-12 pt-4 border-t border-gray-200 text-xs text-gray-500">
+                    សូមអរគុណចំពោះការជ្រើសរើសសេវាកម្មរបស់យើង។<br>
+                    Thank you for choosing our service.
+                </div>
+            </div>
+
+            <button class="print-btn w-full py-3 px-6 bg-indigo-600 text-white rounded-lg shadow-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition duration-200 mt-8 no-print-element" onclick="window.print()">
+                 បោះពុម្ពបង្កាន់ដៃ (Print Receipt)
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Helper function to get currency symbol based on currency code
+        function getCurrencySymbol(currencyCode) {
+            switch (currencyCode) {
+                case 'USD': return '$';
+                case 'KHR': return '៛';
+                default: return ''; // Fallback for any other unexpected currency
+            }
+        }
+
+        // Helper function to format numbers with two decimal places and commas for thousands
+        function formatNumber(num) {
+            if (isNaN(num)) return '0.00';
+            return num.toLocaleString('en-US', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+        }
+
+        // Updates the currency symbols next to amount received and exchange rate inputs
+        function updateCurrencySymbols() {
+            const currencyFrom = document.getElementById('currencyFrom').value;
+            const currencyTo = document.getElementById('currencyTo').value;
+
+            document.getElementById('amountReceivedSymbol').textContent = getCurrencySymbol(currencyFrom);
+            document.getElementById('exchangeRateSymbol').textContent = `${getCurrencySymbol(currencyTo)}/${currencyFrom}`;
+        }
+
+        // Generates and updates the receipt content based on form inputs
+        function generateReceipt() {
+            // Get values from input fields
+            const receiptNo = document.getElementById('receiptNo').value;
+            const handledBy = document.getElementById('handledBy').value;
+            const customerName = document.getElementById('customerName').value;
+            const customerPhone = document.getElementById('customerPhone').value;
+            const customerID = document.getElementById('customerID').value;
+            const currencyFrom = document.getElementById('currencyFrom').value;
+            const currencyTo = document.getElementById('currencyTo').value;
+            const amountReceived = parseFloat(document.getElementById('amountReceived').value);
+            const exchangeRate = parseFloat(document.getElementById('exchangeRate').value);
+            const businessName = document.getElementById('businessName').value;
+            const businessAddress = document.getElementById('businessAddress').value;
+            const businessPhone = document.getElementById('businessPhone').value;
+
+            // Update receipt details in the display section
+            document.getElementById('receiptReceiptNo').textContent = receiptNo;
+            document.getElementById('receiptHandledBy').textContent = handledBy;
+            document.getElementById('receiptCustomerName').textContent = customerName;
+            document.getElementById('receiptCustomerPhone').textContent = customerPhone;
+            document.getElementById('receiptCustomerID').textContent = customerID;
+            document.getElementById('receiptCurrencyFrom').textContent = currencyFrom;
+            document.getElementById('receiptCurrencyTo').textContent = currencyTo;
+            document.getElementById('receiptBusinessName').textContent = businessName;
+            document.getElementById('receiptBusinessContact').textContent = `${businessAddress} | Phone: ${businessPhone}`;
+
+            // Update amount received with correct symbol and formatting
+            document.getElementById('receiptAmountReceived').textContent = `${getCurrencySymbol(currencyFrom)}${formatNumber(amountReceived)}`;
+
+            // Update exchange rate with correct symbols and formatting
+            document.getElementById('receiptExchangeRate').textContent = `${formatNumber(exchangeRate)} ${getCurrencySymbol(currencyTo)}/${currencyFrom}`;
+
+            // Calculate amount given based on currency exchange logic (only USD and KHR)
+            let amountGiven = 0;
+            if (!isNaN(amountReceived) && !isNaN(exchangeRate)) {
+                if (currencyFrom === 'USD' && currencyTo === 'KHR') {
+                    amountGiven = amountReceived * exchangeRate;
+                } else if (currencyFrom === 'KHR' && currencyTo === 'USD') {
+                    amountGiven = amountReceived / exchangeRate;
+                } else if (currencyFrom === currencyTo) {
+                    amountGiven = amountReceived; // No exchange, amount remains same
+                } else {
+                    // Fallback for unexpected or unsupported pairs (e.g., if somehow a different currency gets selected)
+                    amountGiven = 0; // Or display an error message
+                }
+            }
+
+            // Update amount given and total paid with correct symbol and formatting
+            const amountGivenSymbol = getCurrencySymbol(currencyTo);
+            document.getElementById('receiptAmountGiven').textContent = `${formatNumber(amountGiven)}${amountGivenSymbol}`;
+            document.getElementById('receiptTotalPaid').textContent = `${formatNumber(amountGiven)}${amountGivenSymbol}`;
+
+            // Update current date and time
+            const now = new Date();
+            document.getElementById("receiptDate").textContent = now.toLocaleDateString('km-KH'); // Format date for Cambodia
+            document.getElementById("receiptTime").textContent = now.toLocaleTimeString('km-KH', {hour: '2-digit', minute:'2-digit'}); // Format time for Cambodia
+        }
+
+        // Initial setup on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            updateCurrencySymbols(); // Set initial symbols based on default selected currencies
+            generateReceipt(); // Generate receipt initially with default values
+        });
+    </script>
+</body>
+</html>
